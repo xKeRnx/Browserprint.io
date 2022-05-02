@@ -1,0 +1,469 @@
+<?php
+$__TOKEN = "hardcodeshitbykernstudios";
+require $_SERVER["DOCUMENT_ROOT"] . '/includes/config.php';
+
+$activesite = 'ip';
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<?php include 'include/head.php'; ?>
+	<!-- BEGIN PAGE LEVEL STYLES -->
+	<link rel="stylesheet" type="text/css" href="<?php echo $Web_URL; ?>assets/css/forms/switches.css">
+	<link href="<?php echo $Web_URL; ?>plugins/pricing-table/css/component.css" rel="stylesheet" type="text/css" />
+	<link href="<?php echo $Web_URL; ?>assets/css/components/custom-modal.css" rel="stylesheet" type="text/css" />
+
+	<link href="<?php echo $Web_URL; ?>assets/css/apps/notes.css" rel="stylesheet" type="text/css" />
+	<link href="<?php echo $Web_URL; ?>assets/css/forms/theme-checkbox-radio.css" rel="stylesheet" type="text/css" />
+	<link href="<?php echo $Web_URL; ?>assets/css/components/custom-carousel.css" rel="stylesheet" type="text/css">
+	<link href="<?php echo $Web_URL; ?>assets/css/components/cards/card.css" rel="stylesheet" type="text/css">
+	<link href="<?php echo $Web_URL; ?>assets/css/components/tabs-accordian/custom-accordions.css" rel="stylesheet" type="text/css" />
+	<link href="<?php echo $Web_URL; ?>assets/css/dashboard/dash_1.css" rel="stylesheet" type="text/css" />
+
+	<!-- END PAGE LEVEL STYLES -->
+</head>
+
+<body class="alt-menu sidebar-noneoverflow">
+	<!-- BEGIN LOADER -->
+	<div id="load_screen">
+		<div class="loader">
+			<div class="loader-content">
+				<div class="spinner-grow align-self-center"></div>
+			</div>
+		</div>
+	</div>
+	<!--  END LOADER -->
+
+	<!--  BEGIN NAVBAR  -->
+	<?php include 'include/navbar.php'; ?>
+	<!--  END NAVBAR  -->
+
+	<!--  BEGIN MAIN CONTAINER  -->
+	<div class="main-container" id="container">
+
+		<div class="overlay"></div>
+		<div class="search-overlay"></div>
+
+		<!--  BEGIN TOPBAR  -->
+		<?php include 'include/topbar.php'; ?>
+		<!--  END TOPBAR  -->
+
+		<!--  BEGIN CONTENT PART  -->
+		<div id="content" class="main-content">
+			<div class="layout-px-spacing">
+
+				<div class="page-header">
+					<div class="page-title">
+						<h3>IP Research</h3>
+					</div>
+				</div>
+
+				<div class="row layout-top-spacing">
+
+					<div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+						<div class="widget widget-account-invoice-one">
+							<div class="widget-heading">
+								<h5 class="">IP Research Demo</h5>
+							</div>
+							<div class="widget-content">
+								<div class="invoice-box">
+									<?php
+									if (isset($_GET['i']) and $_GET['i'] != "") {
+										$ip = $_GET['i'];
+									} else {
+										$ip = $fp->getIP();
+									}
+									?>
+
+									<div class="acc-total-info">
+										<div class="input-group mb-4">
+											<input id="sip" type="text" class="form-control" placeholder="Enter IP" value="<?php echo $ip; ?>" aria-label="Enter IP">
+											<div class="input-group-append">
+												<button id="sbtn" class="btn btn-primary" type="button">Search</button>
+											</div>
+										</div>
+									</div>
+
+									<div class="inv-detail">
+										<?php
+											$key = "b1fd56c05c0cf75b16d95c23a944680b";
+											$url = "https://browserprint.io/api/ip?key=".$key."&ip=".$ip;
+											$ch = curl_init($url);
+											curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+											$result = curl_exec($ch);
+											curl_close($ch);
+											$obj = json_decode($result, true);
+
+											$serverIP = $fp->getIP();
+											$sql = "SELECT * FROM demo_ip WHERE ip=(:ip) LIMIT 1";
+											$query = $dbh->prepare($sql);
+											$query->bindParam(':ip', $serverIP, PDO::PARAM_STR);
+											$query->execute();
+											if ($query->rowCount() > 0) {
+												$res = $query->fetchAll(PDO::FETCH_OBJ);
+												$lastused = $res[0]->dDate;
+												date_default_timezone_set('Europe/Berlin');
+												$now = date("Y-m-d H:i:s");
+												$nowTime = new DateTime($now);
+												$nowTime->modify("-10 seconds");
+												$nowTime = $nowTime->format('Y-m-d H:i:s');
+											
+												$dbTime = new DateTime($lastused);
+												$dbTime = $dbTime->format('Y-m-d H:i:s');
+											
+												if ($dbTime > $nowTime) {
+													$obj = NULL;
+													$obj['status'] = 'Only demo use...Only 1 query every 10 seconds.';
+												}else{
+													$sqlactiv = "UPDATE demo_ip SET used=used+1 WHERE ip=(:ip)";
+													$queryactiv = $dbh->prepare($sqlactiv);
+													$queryactiv->bindParam(':ip', $serverIP, PDO::PARAM_STR);
+													$queryactiv->execute();
+												}
+											
+											
+											
+											}else{
+												$sql = "insert into demo_ip (ip) values (:ip)";
+												$query = $dbh->prepare($sql);
+												$query->bindParam(':ip', $serverIP, PDO::PARAM_STR);
+												$query->execute();
+											}
+
+											if($obj['status'] == "OK"){
+												echo '<div class="info-detail-1"><p>Classification</p><p class="wi40">' . $obj['classification'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Threat</p><p class="wi40">' . $obj['threat'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>IP</p><p class="wi40">' . $obj['ip'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Country</p><p class="wi40">' . $obj['country'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>City</p><p class="wi40">' . $obj['city'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Region</p><p class="wi40">' . $obj['region'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Postal</p><p class="wi40">' . $obj['zip'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Latitude</p><p class="wi40">' . $obj['lat'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Longitude</p><p class="wi40">' . $obj['long'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Tor</p><p class="wi40">' . $obj['tor'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>VPN</p><p class="wi40">' . $obj['vpn'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Proxy</p><p class="wi40">' . $obj['proxy'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Hostname</p><p class="wi40">' . $obj['hostname'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>ISP</p><p class="wi40">' . $obj['isp'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>ASN</p><p class="wi40">' . $obj['asn'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Homepage</p><p class="wi40">' . $obj['homepage'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Datacenter</p><p class="wi40">' . $obj['datacenter'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Crawler Class</p><p class="wi40">' . $obj['crawler_class'] . '</p></div>';
+												echo '<div class="info-detail-1"><p>Crawler Name</p><p class="wi40">' . $obj['crawler_name'] . '</p></div>';
+												
+											}else{
+												$alert->info($obj['status']);
+											}
+										?>
+									</div>
+
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+						<div class="widget widget-account-invoice-one">
+							<div class="widget-heading">
+								<h5 class="">IP Research API</h5>
+							</div>
+							<div class="widget-content">
+								<div class="invoice-box">
+
+									<div class="code-section-container show-code">
+										<div class="code-section text-left">
+											<pre class="hljs javascript">
+
+											<pre class="hljs" style="overflow: hidden;width: 900px;"><span class="xml"><span class="php"><span class="hljs-meta" style="color: rgb(252, 155, 155);">&lt;?php</span>
+	<span class="hljs-function">
+	$ip = <span class="hljs-string" style="color: rgb(162, 252, 162);">"USER IP"</span>;
+	$key = <span class="hljs-string" style="color: rgb(162, 252, 162);">"YOUR KEY"</span>;
+	$url = <span class="hljs-string" style="color: rgb(162, 252, 162);">"https://browserprint.io/api/ip?key="</span>.$key.<span class="hljs-string" style="color: rgb(162, 252, 162);">"&amp;ip="</span>.$ip;
+	$ch = curl_init($url);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	$result = curl_exec($ch);
+	curl_close($ch);
+	$obj = json_decode($result, true);
+
+	<span class="hljs-keyword" style="color: rgb(252, 194, 140);">if</span>($obj['status'] == <span class="hljs-string" style="color: rgb(162, 252, 162);">"OK"</span>){
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Classification&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['classification'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;IP&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['ip'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Country&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['country'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;City&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['city'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Region&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['region'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Latitude&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['lat'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Longitude&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['long'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Tor&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['tor'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;VPN&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['vpn'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Proxy&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['proxy'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Hostname&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['hostname'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;ISP&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['isp'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;ASN&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['asn'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Homepage&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['homepage'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Datacenter&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['datacenter'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Crawler Class&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['crawler_class'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		<span class="hljs-keyword" style="color: rgb(252, 194, 140);">echo</span> <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;div class="info-detail-1"&gt;&lt;p&gt;Crawler Name&lt;/p&gt;&lt;p class="wi40"&gt;'</span> . $obj['crawler_name'] . <span class="hljs-string" style="color: rgb(162, 252, 162);">'&lt;/p&gt;&lt;/div&gt;'</span>;
+		
+	}<span class="hljs-keyword" style="color: rgb(252, 194, 140);">else</span>{
+		$alert-&gt;info($obj['status']);
+	}
+<span class="hljs-meta" style="color: rgb(252, 155, 155);">?&gt;</span></span></span></pre>
+
+											<pre>
+										</div>
+									</div>
+
+									<div class="code-section-container show-code">
+										<div class="code-section text-left">
+											<pre class="hljs javascript">
+<?php print_r($obj); ?>
+											<pre>
+										</div>
+									</div>
+
+
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+						<div class="widget widget-account-invoice-one">
+							<div class="widget-heading">
+								<h5 class="">Returned data</h5>
+							</div>
+							<div class="widget-content">
+								<div class="table-responsive">
+									<table class="table table-bordered table-hover table-striped mb-4">
+										<thead>
+											<tr>
+												<th>Name</th>
+												<th>Description</th>
+												<th>Example</th>
+												<th>Type</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr>
+												<td>status</td>
+												<td>OK, Plan identifications already exceeded, Project already expired, Key not for this Type, No valid ServerIP, Key not found in DB, Key not defined</td>
+												<td>OK</td>
+												<td>string</td>
+											</tr>
+
+											<tr>
+												<td>error</td>
+												<td>
+												included only when <strong>status is not OK.</strong>
+												<br>Can be one of the following: 0, 1, 2, 3, 4, 5.
+												<br>0="Project already expired", 1="Key not for this Type", 2="No valid ServerIP", 3="Key not found in DB", 4="Key not defined", 5="Plan identifications already exceeded"
+												</td>
+												<td>5</td>
+												<td>int</td>
+											</tr>
+
+											<tr>
+												<td>threat</td>
+												<td>Threat level low, medium, high or ERROR</td>
+												<td>high</td>
+												<td>string</td>
+											</tr>
+
+											<tr>
+												<td>ip</td>
+												<td>IP used for the query</td>
+												<td>67.195.115.105</td>
+												<td>string</td>
+											</tr>
+
+											<tr>
+												<td>country</td>
+												<td>Country Name</td>
+												<td>United States</td>
+												<td>string</td>
+											</tr>
+
+											<tr>
+												<td>country_code</td>
+												<td>Country code</td>
+												<td>US</td>
+												<td>string</td>
+											</tr>
+
+											<tr>
+												<td>continent_code</td>
+												<td>Two-letter continent code</td>
+												<td>NA</td>
+												<td>string</td>
+											</tr>
+
+											<tr>
+												<td>city</td>
+												<td>City</td>
+												<td>New York</td>
+												<td>string</td>
+											</tr>
+
+											<tr>
+												<td>region</td>
+												<td>Region</td>
+												<td>New York</td>
+												<td>string</td>
+											</tr>
+											
+											<tr>
+												<td>zip</td>
+												<td>Zip code</td>
+												<td>10003</td>
+												<td>string</td>
+											</tr>
+											
+											<tr>
+												<td>lat</td>
+												<td>Latitude</td>
+												<td>40.7306</td>
+												<td>float</td>
+											</tr>
+											
+											<tr>
+												<td>long</td>
+												<td>Longitude</td>
+												<td>-73.9915</td>
+												<td>float</td>
+											</tr>
+											
+											<tr>
+												<td>proxy</td>
+												<td>Is proxy, true or false</td>
+												<td>false</td>
+												<td>bool</td>
+											</tr>
+											
+											<tr>
+												<td>tor</td>
+												<td>Is tor, true or false</td>
+												<td>false</td>
+												<td>bool</td>
+											</tr>
+											
+											<tr>
+												<td>vpn</td>
+												<td>Is vpn, true or false</td>
+												<td>false</td>
+												<td>bool</td>
+											</tr>
+											
+											<tr>
+												<td>classification</td>
+												<td>IP classification can be:
+												<br>Tor exit node, Fake crawler, Known attack source - HTTP, Cgi proxy, Anonymizing VPN service, Web proxy, Web scraper, Known attack source - SSH, Known attack source - MAIL, Crawler, Tor node, Dedicated Server, VPN or Proxy, Unknown
+												</td>
+												<td>Crawler</td>
+												<td>string</td>
+											</tr>
+											
+											<tr>
+												<td>crawler_name</td>
+												<td>Crawler name</td>
+												<td>Yahoo! Slurp</td>
+												<td>string</td>
+											</tr>
+											
+											<tr>
+												<td>crawler_class</td>
+												<td>crawler class can be:
+												<br>Uncategorised, Search engine bot, Site monitor, Screenshot creator, Link checker, Web scraper, Vulnerability scanner, Virus scanner, Speed tester, Feed Fetcher, Tool, Marketing, Unrecognized
+												</td>
+												<td>Search engine bot</td>
+												<td>string</td>
+											</tr>
+											
+											<tr>
+												<td>datacenter</td>
+												<td>Datacenter name</td>
+												<td>Yahoo! Inc.</td>
+												<td>string</td>
+											</tr>
+											
+											<tr>
+												<td>homepage</td>
+												<td>Homepage URL</td>
+												<td>http://www.yahoo-inc.com/</td>
+												<td>string</td>
+											</tr>
+											
+											<tr>
+												<td>hostname</td>
+												<td>Hostname</td>
+												<td>unknown.yahoo.com</td>
+												<td>string</td>
+											</tr>
+											
+											<tr>
+												<td>isp</td>
+												<td>ISP name</td>
+												<td>YAHOO-GQ1</td>
+												<td>string</td>
+											</tr>
+											
+											<tr>
+												<td>asn</td>
+												<td>ASN number</td>
+												<td>AS36647</td>
+												<td>string</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+
+				</div>
+
+				<div class="footer-wrapper">
+					<?php include 'include/footer.php'; ?>
+				</div>
+
+			</div>
+		</div>
+		<!--  END CONTENT PART  -->
+
+	</div>
+	<!-- END MAIN CONTAINER -->
+
+	<!-- BEGIN GLOBAL MANDATORY SCRIPTS -->
+	<script src="<?php echo $Web_URL; ?>assets/js/libs/jquery-3.5.1.min.js"></script>
+	<script src="<?php echo $Web_URL; ?>bootstrap/js/popper.min.js"></script>
+	<script src="<?php echo $Web_URL; ?>bootstrap/js/bootstrap.min.js"></script>
+	<script src="<?php echo $Web_URL; ?>plugins/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+	<script src="<?php echo $Web_URL; ?>assets/js/app.js"></script>
+	<script>
+		$(document).ready(function() {
+			App.init();
+		});
+
+		$(function() {
+			$("#sbtn").click( function()
+				{
+					var getUrl = window.location;
+					var baseUrl = getUrl .protocol + "//" + getUrl.host + "/" + getUrl.pathname.split('/')[1];
+					var newURL = baseUrl+ "/" +$('#sip').val();
+					$(location).attr('href',newURL);
+				}
+			);
+		});
+	</script>
+	<script src="<?php echo $Web_URL; ?>assets/js/custom.js"></script>
+	<!-- END GLOBAL MANDATORY SCRIPTS -->
+
+	<!-- BEGIN PAGE LEVEL PLUGINS/CUSTOM SCRIPTS -->
+	<script src="<?php echo $Web_URL; ?>plugins/apex/apexcharts.min.js"></script>
+	<script src="<?php echo $Web_URL; ?>assets/js/dashboard/dash_2.js"></script>
+	<!-- BEGIN PAGE LEVEL PLUGINS/CUSTOM SCRIPTS -->
+
+</body>
+
+</html>
